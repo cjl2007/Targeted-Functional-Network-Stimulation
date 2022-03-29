@@ -283,3 +283,24 @@ ft_write_cifti_mod([OutDir '/Optimize/normE_BestCoilCenter+BestOrientation.dtser
 
 end
 
+function [Output] = SortCircleCoords(Coords)
+% cjl;
+
+% preallocate;
+Output = zeros(size(Coords));
+
+% preallocate;
+Used = [];
+Idx = 1;
+
+% sweep the coordinates;
+for i = 1:size(Coords,1)
+    D = pdist2(Coords(Idx,:),Coords);
+    D(Used)=nan;
+    Idx = find(D==min(nonzeros(D)));
+    Idx = Idx(1); % in case there is more than one;
+    Output(i,:) = Coords(Idx,:);
+    Used = [Used Idx];
+end
+
+end
