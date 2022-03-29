@@ -84,7 +84,7 @@ for t = 1:length(Thresholds)
     
     % sweep all of the functional networks;
     for i = 1:size(FunctionalNetworks.data,2)
-        ROI = FunctionalNetworks.data(1:59412,i)==1;
+        ROI = FunctionalNetworks.data(1:59412,i)~=0;
         OnTarget(t,i) = sum(VA.data(HotSpot(:,t+1) & ROI==1)) / sum(VA.data(HotSpot(:,t+1)==1));
     end
     
@@ -93,6 +93,7 @@ end
 % load the network labels and preset color information;
 NetworkLabels = dataset('XLS',[TansDir '/example_data/ME01/pfm/ME01_FunctionalNetworks.xlsx']);
 NetworkColors = [NetworkLabels.R NetworkLabels.G NetworkLabels.B]/255;
+Networks = NetworkLabels.Network;
 
 H = figure; % prellocate parent figure
 set(H,'position',[1 1 400 250]); hold;
