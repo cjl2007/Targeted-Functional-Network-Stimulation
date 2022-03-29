@@ -304,3 +304,12 @@ for i = 1:size(Coords,1)
 end
 
 end
+
+% 
+function out = smartload(matfile)
+
+out = load(matfile);
+names = fieldnames(out);
+out = eval(['out.' names{1}]);
+
+end
