@@ -1,4 +1,4 @@
-function [ROI,LargestCluster] = tans_roi(Subdir,N,SearchSpace,OutDir,Paths)
+function [ROI,LargestCluster] = tans_roi(Subdir,N,SearchSpace,FS,OutDir,Paths)
 % cjl; cjl2007@med.cornell.edu;
 %
 % Inputs
@@ -14,8 +14,9 @@ rng(44); % for reproducibility;
 str = strsplit(Subdir,'/');
 Subject = str{end};
 
-% load FreeSurfer (FS) gyral labels and sulcal depth (Sulc) information;
-FS = ft_read_cifti_mod([Subdir '/anat/MNINonLinear/fsaverage_LR32k/' Subject '.aparc.32k_fs_LR.dlabel.nii']);
+% load FreeSurfer (FS) gyral labels 
+% and sulcal depth (Sulc) information;
+FS = ft_read_cifti_mod(FS);
 Sulc = ft_read_cifti_mod([Subdir '/anat/MNINonLinear/fsaverage_LR32k/' Subject '.sulc.32k_fs_LR.dscalar.nii']);
 BrainStructure = FS.brainstructure; % barrow the brain structure index
 Sulc.data(BrainStructure==-1)=[]; % remove medial wall vertices

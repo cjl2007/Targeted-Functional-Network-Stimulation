@@ -2,14 +2,15 @@
 
 % turn some knobs & set some options
 SearchSpace = [3 18 20 24 27 28  38 53 55 59 62 63]; % these values correspond to lateral prefrontal cortex (both hemispheres)
-NetworksofInterest = {'Frontoparietal'}; %
-Thresholds = linspace(99.9,99,10);
+PercentileThresholds = linspace(99.9,99,10);
 CoiltoCortexDistance = 40; % in mm
 GridSpacing = 2; % in mm
 CoilModel = 'MagVenture_MC_B70.nii.gz';
 SearchAngle = 30; % in deg.
 ErrorTolerance = 5; % in mm
 Sigma = 0.85; % smoothing factor, used only for visualization purposes. No need to change this. 
+DiDt = linspace(1,155,20) * 1e6; % A/us
+AbsoluteThreshold = 100; % V/m
 nThreads = 20;
 
 % define some paths 
@@ -64,23 +65,23 @@ tans_simnibs([TansDir '/example_data/ME01'],[TansDir '/example_data/ME01/tans/Ne
 
 % run the optimization;
 tans_optimize([TansDir '/example_data/ME01'],[TansDir '/example_data/ME01/tans/HeadModel'],...
-[TansDir '/example_data/ME01/tans/Network_Frontoparietal'],TargetNetwork,Thresholds,Sigma,ErrorTolerance,CoilModel,Paths);
+[TansDir '/example_data/ME01/tans/Network_Frontoparietal'],TargetNetwork,PercentileThresholds,Sigma,ErrorTolerance,CoilModel,AbsoluteThreshold,DiDt,Paths);
 
 %% evaluate the extent to which the E-field "hotspot" is on target
 
 % generate the E-field hotspot associated with the optimal
 E = ft_read_cifti_mod([TansDir '/example_data/ME01/tans/Network_Frontoparietal/Optimize/normE_BestCoilCenter+BestOrientation.dtseries.nii']);
-[HotSpot] = tans_make_hotspot(E,Thresholds);
+[HotSpot] = tans_make_hotspot(E,PercentileThresholds);
 
 % read in the surface vertex area information;
 VA = ft_read_cifti_mod([TansDir '/example_data/ME01/anat/T1w/fsaverage_LR32k/ME01.midthickness_va.32k_fs_LR.dscalar.nii']);
 
 % preallocate the on target variable;
-OnTarget = zeros(length(Thresholds),...
+OnTarget = zeros(length(PercentileThresholds),...
 size(FunctionalNetworks.data,2));
 
 % sweep the E-field thresholds
-for t = 1:length(Thresholds)
+for t = 1:length(PercentileThresholds)
     
     % sweep all of the functional networks;
     for i = 1:size(FunctionalNetworks.data,2)

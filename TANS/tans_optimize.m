@@ -1,17 +1,20 @@
-function tans_optimize(Subdir,HeadModelDir,OutDir,Target,Thresholds,Sigma,ErrorTolerance,CoilModel,Paths)
+function tans_optimize(Subdir,HeadModelDir,OutDir,Target,AvoidanceRegion,PercentileThresholds,Sigma,ErrorTolerance,CoilModel,AbsoluteThreshold,DiDt,Paths)
 % cjl; cjl2007@med.cornell.edu;
 %
 % Inputs
 % "Subdir": The path to the subject's folder.
 % "HeadModelDir": The path to the head model folder.
 % "OutDir": The path to the output folder.
-% "Target": A vertex (59412) x 1 array (O == non-target vertices, and 1 == target vertices).
-% "Thresholds": A vector of percentiles used for operationalizing the E-field hotspot, such as linspace(99.9,99,10).
+% "Target": A vertex (59412) x 1 logical array of target network vertices.
+% "AvoidanceRegion": A vertex (59412) x 1 logical array of vertices to avoid stimulating.
+% "PercentileThresholds": A vector of percentiles used for operationalizing the E-field hotspot during the optimization, such as linspace(99.9,99,10).
 % "Sigma": Smoothing kernel size (sigma = 0.85 seems to work well).
 % "ErrorTolerance": Coil center positioning uncertainity (in mm). Optimal coil placement is defined as the position that maximizes the on target value on average within this distance. 
-% "CoilModel": 
+% "CoilModel": Select one of the coils provided by SimNibs in ~/SimNIBS-3.2/simnibs_env/lib/python3.7/site-packages/simnibs/ccd-files/
+% "AbsoluteThreshold": This value (in V/m units) represents the assumed neural activation threshold. Default is 100 V/m.  
+% "DiDt": A range of stimulation intensities (the speed of variation of the current throughout the stimulating coil, in units of A/us). Default is DiDt = linspace(1,155,20) * 1e6, which corresponds *approximately* the possible range of realized 𝑑𝐼/𝑑𝑡 on our MagPro X100 machine when using the B70 coil.
 
-% Notes: the script assumes HCP-like directory structures for 
+% Note: the script assumes HCP-like directory structures for 
 % things like finding the surface files for volume-to-surface mapping. 
 
 % define some directories;
@@ -53,7 +56,13 @@ nCols = size(NormE.data,2);
 
 % preallocate;
 OnTarget = zeros(length(SearchGridVertices),...
-nCols,length(Thresholds)); % "OnTaget" variable (% of E-field hotspot that contains in the ROI);
+nCols,length(PercentileThresholds)); % "OnTaget" variable (% of E-field hotspot that contains in the ROI);
+
+% if no non-target 
+% is specified; 
+if isempty(AvoidanceRegion)
+AvoidanceRegion = zeros(size(Target,1),1);   
+end
 
 % sweep the search space;
 for i = 1:length(files)
@@ -70,10 +79,10 @@ for i = 1:length(files)
     for ii = 1:size(NormE.data,2)
         
         % sweep all of the thresholds;
-        for iii = 1:length(Thresholds)
+        for iii = 1:length(PercentileThresholds)
             
-            HotSpot = NormE.data(1:59412,ii) > prctile(NormE.data(1:59412,ii),Thresholds(iii)); % this is the hotspot
-            OnTarget(idx,ii,iii) = sum(VA.data(HotSpot&Target==1)) / sum(VA.data(HotSpot));
+            HotSpot = NormE.data(1:59412,ii) > prctile(NormE.data(1:59412,ii),PercentileThresholds(iii)); % this is the hotspot
+            OnTarget(idx,ii,iii) = (sum(VA.data(HotSpot&Target==1)) / sum(VA.data(HotSpot))) - (sum(VA.data(HotSpot&AvoidanceRegion==1)) / sum(VA.data(HotSpot)));
             
         end
         
@@ -225,16 +234,16 @@ NormE = ft_read_cifti_mod([OutDir '/Optimize/normE_BestCoilCenter+AllOrientation
 nCols = size(NormE.data,2);
 
 % preallocate the two main variables;
-OnTarget = zeros(1,nCols,length(Thresholds)); % "OnTaget" variable (% of E-field that falls in the ROI);
+OnTarget = zeros(1,nCols,length(PercentileThresholds)); % "OnTaget" variable (% of E-field that falls in the ROI);
 
 % sweep the coil orientations;
 for i = 1:size(NormE.data,2)
     
     % sweep all of the thresholds;
-    for ii = 1:length(Thresholds)
+    for ii = 1:length(PercentileThresholds)
 
-        HotSpot = NormE.data(1:59412,i) > prctile(NormE.data(1:59412,i),Thresholds(ii)); % this is the hotspot
-        OnTarget(1,i,ii) = sum(VA.data(HotSpot & Target==1)) / sum(VA.data(HotSpot));
+        HotSpot = NormE.data(1:59412,i) > prctile(NormE.data(1:59412,i),PercentileThresholds(ii)); % this is the hotspot
+        OnTarget(1,i,ii) = (sum(VA.data(HotSpot & Target==1)) / sum(VA.data(HotSpot))) - (sum(VA.data(HotSpot&AvoidanceRegion==1)) / sum(VA.data(HotSpot)));
 
     end
     
@@ -280,6 +289,113 @@ system(['rm ' OutDir '/Optimize/tmp.txt']); % remove intermediate file;
 % write out the final E-field map
 NormE = ft_read_cifti_mod([OutDir '/Optimize/normE_BestCoilCenter+AllOrientations.dtseries.nii']); NormE.data = NormE.data(:,Idx(1));
 ft_write_cifti_mod([OutDir '/Optimize/normE_BestCoilCenter+BestOrientation.dtseries.nii'],NormE);
+
+%% now, lets estimate the optimal dose (assuming a specific threshold for neural activation).  
+
+% if stimulation intensities 
+% to test are not specified  
+if isempty(DiDt)
+DiDt = linspace(1,155,20) * 1e6; % A/us
+end
+
+% Initialize a session
+s = sim_struct('SESSION');
+
+% Name of head mesh
+s.fnamehead = [HeadModelDir...
+'/' Subject '.msh'];
+
+% Output folder;
+system(['rm -rf ' OutDir '/Optimize/Simulation/']);
+system(['mkdir -p ' OutDir '/Optimize/Simulation/']);
+s.pathfem = [OutDir '/Optimize/Simulation'];
+
+% load optimal coil placement information;
+CoilCenterCoords = load([OutDir '/Optimize/CoilCenterACPC.txt']);
+CoilOrientationCoords = load([OutDir '/Optimize/CoilOrientationACPC.txt']);
+
+% sweep the intensities;
+for i = 1:length(DiDt)
+    s.poslist{i} = sim_struct('TMSLIST');
+    s.poslist{i}.fnamecoil = CoilModel;
+    s.poslist{i}.pos(1).centre = CoilCenterCoords; % center of the coil (will be projected to the head)
+    s.poslist{i}.pos(1).pos_ydir = CoilOrientationCoords;
+    s.map_to_vol = true;
+    s.fields = 'e'; % normE only;
+    s.poslist{1,i}.pos.didt = DiDt(i);
+end
+  
+% remove the dir. if it exists;
+if exist([OutDir '/Optimize/Simulation/'],'dir')
+system(['rm -rf ' OutDir '/Optimize/Simulation/']);
+end
+
+%run simulation;
+run_simnibs(s);
+
+% map concatenated volume to the 32k surface;
+system(['fslmerge -t ' OutDir '/Optimize/Simulation/subject_volumes/normE.nii.gz ' OutDir '/Optimize/Simulation/subject_volumes/' Subject '*_normE.nii.gz']);
+system(['rm ' OutDir '/Optimize/Simulation/subject_volumes/' Subject '*_normE.nii.gz']); % remove intermediate files;
+system(['wb_command -volume-to-surface-mapping ' OutDir '/Optimize/Simulation/subject_volumes/normE.nii.gz  ' MIDTHICK_32k{1} ' ' OutDir '/Optimize/Simulation/subject_volumes/normE.L.32k_fs_LR.shape.gii -ribbon-constrained ' WHITE_32k{1} ' ' PIAL_32k{1} ' -interpolate ENCLOSING_VOXEL']);
+system(['wb_command -volume-to-surface-mapping ' OutDir '/Optimize/Simulation/subject_volumes/normE.nii.gz  ' MIDTHICK_32k{2} ' ' OutDir '/Optimize/Simulation/subject_volumes/normE.R.32k_fs_LR.shape.gii -ribbon-constrained ' WHITE_32k{2} ' ' PIAL_32k{2} ' -interpolate ENCLOSING_VOXEL']);
+system(['wb_command -metric-mask ' OutDir '/Optimize/Simulation/subject_volumes/normE.L.32k_fs_LR.shape.gii ' ROI_32k{1} ' ' OutDir '/Optimize/Simulation/subject_volumes/normE.L.32k_fs_LR.shape.gii']);
+system(['wb_command -metric-mask ' OutDir '/Optimize/Simulation/subject_volumes/normE.R.32k_fs_LR.shape.gii ' ROI_32k{2} ' ' OutDir '/Optimize/Simulation/subject_volumes/normE.R.32k_fs_LR.shape.gii']);
+system(['wb_command -cifti-create-dense-timeseries ' OutDir '/Optimize/Simulation/subject_volumes/normE.dtseries.nii -left-metric ' OutDir '/Optimize/Simulation/subject_volumes/normE.L.32k_fs_LR.shape.gii -roi-left ' ROI_32k{1} ' -right-metric ' OutDir '/Optimize/Simulation/subject_volumes/normE.R.32k_fs_LR.shape.gii -roi-right ' ROI_32k{2}]);
+system(['rm ' OutDir '/Optimize/Simulation/subject_volumes/*shape*']);
+
+% rename the cifti file and remove some intermediate files;
+system(['mv ' OutDir '/Optimize/Simulation/subject_volumes/normE.dtseries.nii ' OutDir '/Optimize/normE_BestCoilCenter+BestOrientation_AllStimulationItensities.dtseries.nii']);
+system(['rm -rf ' OutDir '/Optimize/Simulation/']);
+
+% this is an ugly fix, but we need to reorder the columns of the cifti so the the intensity is ascending.
+E = ft_read_cifti_mod([OutDir '/Optimize/normE_BestCoilCenter+BestOrientation_AllStimulationItensities.dtseries.nii']);
+[~,Reorder] = sort(max(E.data)); E.data = E.data(:,Reorder);
+ft_write_cifti_mod([OutDir '/Optimize/normE_BestCoilCenter+BestOrientation_AllStimulationItensities.dtseries.nii'],E);
+
+% write out the intensities used;
+system(['echo ' num2str(DiDt)...
+' > ' OutDir '/Optimize/DiDt.txt']);
+
+% if no absolute 
+% threshold is specified
+if isempty(AbsoluteThreshold)
+AbsoluteThreshold = 100; % V/m
+end
+
+% sweep the range of 
+% stimulation intensities
+for t = 1:size(E.data,2)
+    
+    HotSpot = E.data(1:59412,t) >= AbsoluteThreshold; % this is the hotspot
+    
+    % only consider if hotspot
+    % is at least 1000 mm2
+    if sum(VA.data(HotSpot)) > 10^3
+        
+        % calculate proportion of the suprathreshold E-field that is on-target
+        X(t) = sum(VA.data(HotSpot&Target==1)) / sum(VA.data(HotSpot)); 
+        
+    end
+
+end
+
+H = figure; % prellocate parent figure
+set(H,'position',[1 1 350 225]); hold;
+
+% plot the results;
+plot(X * 100,'Color','k','LineWidth',1)
+
+% make it "pretty";
+xlim([0 length(DiDt)]);
+ylim([0 100]);
+yticks(0:20:100);
+xlabel('dI/dt (A/\mus)');
+ylabel('% On-Target')
+xticks(1:1:length(DiDt));
+xticklabels(round(DiDt/1e6));
+xtickangle(90);
+set(gca,'FontName','Arial','FontSize',12,'TickLength',[0 0]);
+saveas(gcf,[OutDir '/Optimize/PercentageOnTarget_AbsoluteThreshold_' num2str(AbsoluteThreshold) '_Vm.pdf']); 
 
 end
 
