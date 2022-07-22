@@ -1,4 +1,4 @@
-function tans_simnibs(Subdir,OutDir,HeadModelDir,SearchGridCoords,CoilModel,AngleResolution,nThreads,Paths)
+function tans_simnibs(Subdir,HeadModelDir,SearchGridCoords,CoilModel,AngleResolution,nThreads,OutDir,Paths)
 % cjl; cjl2007@med.cornell.edu;
 
 % Inputs

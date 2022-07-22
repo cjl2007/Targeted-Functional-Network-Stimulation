@@ -5,13 +5,13 @@ SearchSpace = [3 18 20 24 27 28  38 53 55 59 62 63]; % these values correspond t
 PercentileThresholds = linspace(99.9,99,10);
 CoiltoCortexDistance = 40; % in mm
 GridSpacing = 2; % in mm
-CoilModel = 'MagVenture_MC_B70.nii.gz';
+CoilModel = 'MagVenture_MC_B70.nii.gz'; % set to whatever coil you are planning on using. 
 SearchAngle = 30; % in deg.
 ErrorTolerance = 5; % in mm
 Sigma = 0.85; % smoothing factor, used only for visualization purposes. No need to change this. 
 DiDt = linspace(1,155,20) * 1e6; % A/us
 AbsoluteThreshold = 100; % V/m
-nThreads = 20;
+nThreads = 20; % 
 
 % define some paths 
 Paths{1} = '/home/charleslynch/SimNIBS-3.2'; % download from https://simnibs.github.io/simnibs/build/html/index.html
@@ -20,37 +20,41 @@ TansDir = pwd; % this is the dir containing all the functions & example_data fol
 
 %% Head models
 
-% the "tans_headmodels.m" script is a wrapper for the headreco program. In addition, a combination of FreeSurfer and Connectome workBench 
-% command line utilities are used to 1) generate a skin surface and 2) calculate the distances (in geodesic space) between all pairs of skin vertices, 
-% information that is used later on by other functions. 
+% the "tans_headmodels.m" script is a wrapper for the headreco program. In addition, a combination of FreeSurfer and Connectome WorkBench 
+% command line utilities are used to 1) generate a skin surface (both smoothed and unsmoothed) and 2) calculate the distances 
+% (in geodesic space) between all pairs of skin vertices, information that is used later on by other functions. 
 
 % run the "tans_headmodels.m" module (this can take about a day to run);
 tans_headmodels([TansDir '/example_data/ME01'],[TansDir '/example_data/ME01/tans'],Paths);
 
 %% STEP 1
 
-% the primary purpose of the "tans_roi.m" script is to identify the largest
+% the primary purpose of the "tans_roi.m" script is to help identify the largest
 % piece of the target network that is 1) in the search space defined by the user 
-% (e.g., DLPFC) and 2) is located on a gyral crown;
+% (e.g., DLPFC) and 2) is located on a gyral crown. 
 
 % read in the functional networks for this individual;
 FunctionalNetworks = ft_read_cifti_mod([TansDir '/example_data/ME01/pfm/ME01_FunctionalNetworks.dtseries.nii']);
 
 % isolate the target network
 TargetNetwork = FunctionalNetworks;
-TargetNetwork.data = FunctionalNetworks.data(:,9); % note: column 9 == binary frontoparietal network map. 
+TargetNetwork.data = FunctionalNetworks.data(:,9); % note: column 9 == frontoparietal network map. 
 
 % run the "tans_roi.m" module;
-[TargetNetwork,LargestCluster] = tans_roi([TansDir '/example_data/ME01'],TargetNetwork,SearchSpace,[TansDir '/example_data/ME01/tans/Network_Frontoparietal'],Paths);
+[TargetNetwork,LargestCluster] = tans_roi([TansDir '/example_data/ME01'],TargetNetwork,...
+[TansDir '/example_data/ME01/anat/MNINonLinear/fsaverage_LR32k/' Subject '.aparc.32k_fs_LR.dlabel.nii'],...
+SearchSpace,[TansDir '/example_data/ME01/tans/Network_Frontoparietal'],Paths);
 
 %% STEP 2
 
 % the primary purpose of the "tans_searchgrid.m" script is to generate an
-% array of 3D coordinates cooresponding to points on the scalp to center
-% the coil center (a "search grid").
-
+% array of 3D coordinates cooresponding to the "search grid" (i.e., all the
+% coil positions on the scalp directly above the target that we will test).
+ 
 % generate a search grid on the scalp above the target network;
-[SubSampledSearchGrid] = tans_searchgrid([TansDir '/example_data/ME01'],LargestCluster,[TansDir '/example_data/ME01/tans/HeadModel'],[TansDir '/example_data/ME01/tans/Network_Frontoparietal'],GridSpacing,CoiltoCortexDistance,Paths);
+[SubSampledSearchGrid] = tans_searchgrid([TansDir '/example_data/ME01'],LargestCluster,...
+[TansDir '/example_data/ME01/tans/HeadModel'],GridSpacing,CoiltoCortexDistance,...
+[TansDir '/example_data/ME01/tans/Network_Frontoparietal'],Paths);
 
 %% STEP 3
 
@@ -58,14 +62,15 @@ TargetNetwork.data = FunctionalNetworks.data(:,9); % note: column 9 == binary fr
 % run simNIBS at each point in the search grid. The results of each
 % simulation are mapped to the individual's midthickness surface.
 
-% run simNIBs at every point in the search grid;
-tans_simnibs([TansDir '/example_data/ME01'],[TansDir '/example_data/ME01/tans/Network_Frontoparietal'],[TansDir '/example_data/ME01/tans/HeadModel'],SubSampledSearchGrid,CoilModel,SearchAngle,nThreads,Paths);
+% run SimNIBs at every point in the search grid;
+tans_simnibs([TansDir '/example_data/ME01'],[TansDir '/example_data/ME01/tans/HeadModel'],...
+SubSampledSearchGrid,CoilModel,SearchAngle,nThreads,[TansDir '/example_data/ME01/tans/Network_Frontoparietal'],Paths);
 
 %% STEP 4
 
 % run the optimization;
-tans_optimize([TansDir '/example_data/ME01'],[TansDir '/example_data/ME01/tans/HeadModel'],...
-[TansDir '/example_data/ME01/tans/Network_Frontoparietal'],TargetNetwork,PercentileThresholds,Sigma,ErrorTolerance,CoilModel,AbsoluteThreshold,DiDt,Paths);
+tans_optimize([TansDir '/example_data/ME01'],[TansDir '/example_data/ME01/tans/HeadModel'],TargetNetwork,PercentileThresholds,...
+Sigma,ErrorTolerance,CoilModel,AbsoluteThreshold,DiDt,[TansDir '/example_data/ME01/tans/Network_Frontoparietal'],Paths);
 
 %% evaluate the extent to which the E-field "hotspot" is on target
 

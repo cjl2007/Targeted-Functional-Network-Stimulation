@@ -1,8 +1,12 @@
-function [ROI,LargestCluster] = tans_roi(Subdir,N,SearchSpace,FS,OutDir,Paths)
+function [ROI,LargestCluster] = tans_roi(Subdir,TargetNetwork,GyralLabels,SearchSpace,OutDir,Paths)
 % cjl; cjl2007@med.cornell.edu;
 %
 % Inputs
 % "Subdir" (Subject Directory): Path to subject folder. 
+% "TargetNetwork": Cifti file containing only the functional network of interest (all non zero values will be considered target network vertices).
+% "GyralLabels": Path to .dlabel.nii file (for example, X.aparc.32k_fs_LR.dlabel.nii or X.aparc.a2009s.32k_fs_LR.dlabel.nii) used to define the search space.
+% "SearchSpace": Values corresponding to labels in "GyralLabels" file that collectively are used to define the search space mask. 
+% "OutDir": The path to the output folder.
 
 % define some directories;
 addpath(genpath(Paths{1})); % define the path to SimNibs software
@@ -14,11 +18,11 @@ rng(44); % for reproducibility;
 str = strsplit(Subdir,'/');
 Subject = str{end};
 
-% load FreeSurfer (FS) gyral labels 
-% and sulcal depth (Sulc) information;
-FS = ft_read_cifti_mod(FS);
+% load gyral labels and 
+% sulcal depth information;
+GyralLabels = ft_read_cifti_mod(GyralLabels);
 Sulc = ft_read_cifti_mod([Subdir '/anat/MNINonLinear/fsaverage_LR32k/' Subject '.sulc.32k_fs_LR.dscalar.nii']);
-BrainStructure = FS.brainstructure; % barrow the brain structure index
+BrainStructure = GyralLabels.brainstructure; % barrow the brain structure index
 Sulc.data(BrainStructure==-1)=[]; % remove medial wall vertices
 BrainStructure(BrainStructure==-1)=[]; % remove medial wall vertices
 
@@ -33,7 +37,7 @@ RH = gifti(MidthickSurfs{2});
 
 % extract coordinates for all cortical vertices
 SurfaceCoordinates = [LH.vertices; RH.vertices]; % combine hemipsheres
-surf_indices_incifti = N.brainstructure > 0 & N.brainstructure < 3;
+surf_indices_incifti = TargetNetwork.brainstructure > 0 & TargetNetwork.brainstructure < 3;
 surf_indices_incifti = surf_indices_incifti(1:size(SurfaceCoordinates,1));
 SurfaceCoordinates = SurfaceCoordinates(surf_indices_incifti,:);
 
@@ -41,17 +45,17 @@ SurfaceCoordinates = SurfaceCoordinates(surf_indices_incifti,:);
 D = pdist2(SurfaceCoordinates,SurfaceCoordinates);
 D(BrainStructure==1,BrainStructure==1)=nan;
 D(BrainStructure==2,BrainStructure==2)=nan;
-MedialWallVertices = find(min(D,[],2) < 10); % 10mm seems to work okay;
+MedialWallVertices = find(min(D,[],2) < 10); % 10mm seems to work okay; this needed to be improved in future
 
 % make the ROI dir.;
 mkdir([OutDir '/ROI']);
 
 % this is the full network 
 % target (before any editing);
-TargetNetwork = N.data~=0;
+TargetNetwork = TargetNetwork.data~=0;
 
-O = N; % preallocate
-O.data = zeros(size(N.data)); % blank slate 
+O = TargetNetwork; % preallocate
+O.data = zeros(size(TargetNetwork.data)); % blank slate 
 O.data(TargetNetwork==1) = 1;  % log network 
 O.data(59413:end) = 0; % cortex only
 ft_write_cifti_mod([OutDir '/ROI/TargetNetwork'],O); % write out the .dtseries.nii;
@@ -66,9 +70,9 @@ system(['wb_command -cifti-label-to-border ' OutDir '/ROI/TargetNetwork.dlabel.n
 system(['rm ' OutDir '/ROI/Labels.txt ' OutDir '/ROI/TargetNetwork.dlabel.nii']); % remove intermediate files
 
 % this is the full network target (constrained to search space);
-TargetNetwork(~ismember(FS.data,SearchSpace)) = 0; % constrain to search space
-O = N; % preallocate
-O.data = zeros(size(N.data)); % blank slate 
+TargetNetwork(~ismember(GyralLabels.data,SearchSpace)) = 0; % constrain to search space
+O = TargetNetwork; % preallocate
+O.data = zeros(size(TargetNetwork.data)); % blank slate 
 O.data(TargetNetwork==1) = 1;  % log network within the search space 
 O.data(59413:end) = 0; % cortex only
 ft_write_cifti_mod([OutDir '/ROI/TargetNetwork+SearchSpace'],O); % write out the .dtseries.nii;
@@ -76,8 +80,8 @@ ft_write_cifti_mod([OutDir '/ROI/TargetNetwork+SearchSpace'],O); % write out the
 % this is the full network target,constrained to search space, after sulcal/medial wall masking;
 TargetNetwork(Sulc.data < 0) = 0; % remove network vertices in sulcus / fundus;
 TargetNetwork(MedialWallVertices) = 0; % remove medial surface vertices
-O = N; % preallocate
-O.data = zeros(size(N.data)); % blank slate 
+O = TargetNetwork; % preallocate
+O.data = zeros(size(TargetNetwork.data)); % blank slate 
 O.data(TargetNetwork==1) = 1;  % log network within the search space 
 O.data(59413:end) = 0; % cortex only
 ft_write_cifti_mod([OutDir '/ROI/TargetNetwork+SearchSpace+SulcalMask'],O); % write out the .dtseries.nii;

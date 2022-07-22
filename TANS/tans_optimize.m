@@ -4,16 +4,15 @@ function tans_optimize(Subdir,HeadModelDir,OutDir,Target,AvoidanceRegion,Percent
 % Inputs
 % "Subdir": The path to the subject's folder.
 % "HeadModelDir": The path to the head model folder.
-% "OutDir": The path to the output folder.
 % "Target": A vertex (59412) x 1 logical array of target network vertices.
 % "AvoidanceRegion": A vertex (59412) x 1 logical array of vertices to avoid stimulating.
 % "PercentileThresholds": A vector of percentiles used for operationalizing the E-field hotspot during the optimization, such as linspace(99.9,99,10).
 % "Sigma": Smoothing kernel size (sigma = 0.85 seems to work well).
 % "ErrorTolerance": Coil center positioning uncertainity (in mm). Optimal coil placement is defined as the position that maximizes the on target value on average within this distance. 
 % "CoilModel": Select one of the coils provided by SimNibs in ~/SimNIBS-3.2/simnibs_env/lib/python3.7/site-packages/simnibs/ccd-files/
-% "AbsoluteThreshold": This value (in V/m units) represents the assumed neural activation threshold. Default is 100 V/m.  
+% "AbsoluteThreshold": This value (in V/m units) represents an assumed neural activation threshold. Default is 100 V/m.  
 % "DiDt": A range of stimulation intensities (the speed of variation of the current throughout the stimulating coil, in units of A/us). Default is DiDt = linspace(1,155,20) * 1e6, which corresponds *approximately* the possible range of realized 𝑑𝐼/𝑑𝑡 on our MagPro X100 machine when using the B70 coil.
-
+% "OutDir": The path to the output folder.
 % Note: the script assumes HCP-like directory structures for 
 % things like finding the surface files for volume-to-surface mapping. 
 
@@ -421,7 +420,7 @@ end
 
 end
 
-% 
+%
 function out = smartload(matfile)
 
 out = load(matfile);
