@@ -35,7 +35,7 @@ status = exist('gifti','file');
 % directory containing example data;
 DataDir = '/path/to/example_data'; % note: should be obvious, but user needs to manually define this
 
-%% Create the hodel model
+%% Create the head model
 %
 % Timing: Typically several hours to a day. 
 % 
