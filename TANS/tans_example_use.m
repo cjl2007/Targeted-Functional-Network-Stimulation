@@ -249,7 +249,6 @@ OutDir = [DataDir '/' Subject '/tans/Network_Frontoparietal'];
 PercentileThresholds = linspace(99.9,99,10);
 CoilModel = 'MagVenture_MC_B70.nii.gz';  
 PositionUncertainty = 5; 
-Sigma = 0.85; 
 DiDt = linspace(1,155,20) * 1e6; % A/us
 AbsoluteThreshold = 100; % V/m
 
@@ -259,7 +258,7 @@ TargetNetwork.data(TargetNetwork.data~=9) = 0; % note: 9 == frontoparietal netwo
 TargetNetwork.data(TargetNetwork.data~=0) = 1; % binarize.
 
 % run the "tans_optimize.m" module;
-tans_optimize(Subject,TargetNetwork,[],PercentileThresholds,SkinVol,SkinSurf,SkinDistanceMatrix,VertexSurfaceArea,MidthickSurfs,WhiteSurfs,PialSurfs,MedialWallMasks,HeadMesh,PositionUncertainty ,CoilModel,AbsoluteThreshold,DiDt,OutDir,Paths)
+tans_optimize(Subject,TargetNetwork,[],PercentileThresholds,SkinVol,SkinSurf,SkinDistanceMatrix,VertexSurfaceArea,MidthickSurfs,WhiteSurfs,PialSurfs,MedialWallMasks,HeadMesh,PositionUncertainty,CoilModel,AbsoluteThreshold,DiDt,OutDir,Paths)
 
 % generate an inverse transform (if needed); transform target coordinates to native T1w image space (which can be used for neuronav, for example)
 system(['convert_xfm -omat ' DataDir '/' Subject '/anat/T1w/xfms/acpc2orig.mat -inverse ' DataDir '/' Subject '/anat/T1w/xfms/acpc.mat']);
