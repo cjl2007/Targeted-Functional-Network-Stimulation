@@ -111,7 +111,7 @@ VertexSurfaceArea = ft_read_cifti_mod([DataDir '/' Subject '/anat/T1w/fsaverage_
 OutDir = [DataDir '/' Subject '/tans/Network_Frontoparietal'];
 
 % run the tans_roi function
-tans_roi(TargetNetwork,MidthickSurfs,VertexSurfaceArea,Sulc,SearchSpace,OutDir,Paths);
+[TargetNetworkPatch] = tans_roi(TargetNetwork,MidthickSurfs,VertexSurfaceArea,Sulc,SearchSpace,OutDir,Paths);
 
 % Note: The TANS approach is intended to target surface-registered functional brain networks mapped in individual subjects. 
 % In principle, however, any spatial map, such as an ICA component, functional connectivity or task activation map can be used instead. 

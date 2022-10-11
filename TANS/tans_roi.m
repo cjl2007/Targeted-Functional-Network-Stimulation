@@ -1,4 +1,4 @@
-function tans_roi(TargetNetwork,MidthickSurfs,VertexSurfaceArea,Sulc,SearchSpace,OutDir,Paths)
+function [TargetNetworkPatch] = tans_roi(TargetNetwork,MidthickSurfs,VertexSurfaceArea,Sulc,SearchSpace,OutDir,Paths)
 % cjl; cjl2007@med.cornell.edu;
 
 % Description of input parameters
@@ -132,6 +132,7 @@ end
 O.data = zeros(size(O.data,1),1); % blank slate
 O.data(TargetPatch==1)=1; % binarize;
 ft_write_cifti_mod([OutDir '/ROI/TargetNetworkPatch'],O);
+TargetNetworkPatch = 0; % can be passed to tans_searchgrid.m function;
 
 end
 
