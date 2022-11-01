@@ -82,12 +82,12 @@ parfor i = 1:size(SearchGridCoords,1)
     run_simnibs(s);
     
     % merge all the volumes into a single 4D file;
-    system(['rm ' OutDir '/SearchGrid/Simulation_' sprintf('%05d',i) '/subject_volumes/normE*']); % 
+    system(['rm ' OutDir '/SearchGrid/Simulation_' sprintf('%05d',i) '/subject_volumes/normE*']); % can we cut this line?
     system(['fslmerge -t ' OutDir '/SearchGrid/Simulation_' sprintf('%05d',i) '/subject_volumes/normE.nii.gz ' OutDir '/SearchGrid/Simulation_' sprintf('%05d',i) '/subject_volumes/*normE.nii.gz']);
     
     % map concatenated volume to the 32k surface;
-    system(['wb_command -volume-to-surface-mapping ' OutDir '/SearchGrid/Simulation_' sprintf('%05d',i) '/subject_volumes/normE.nii.gz  ' MidthickSurfs{1} ' ' OutDir '/SearchGrid/Simulation_' sprintf('%05d',i) '/subject_volumes/normE.L.32k_fs_LR.shape.gii -ribbon-constrained ' WhiteSurfs{1} ' ' PialSurfs{1} ' -interpolate ENCLOSING_VOXEL']);
-    system(['wb_command -volume-to-surface-mapping ' OutDir '/SearchGrid/Simulation_' sprintf('%05d',i) '/subject_volumes/normE.nii.gz  ' MidthickSurfs{2} ' ' OutDir '/SearchGrid/Simulation_' sprintf('%05d',i) '/subject_volumes/normE.R.32k_fs_LR.shape.gii -ribbon-constrained ' WhiteSurfs{2} ' ' PialSurfs{2} ' -interpolate ENCLOSING_VOXEL']);
+    system(['wb_command -volume-to-surface-mapping ' OutDir '/SearchGrid/Simulation_' sprintf('%05d',i) '/subject_volumes/normE.nii.gz  ' MidthickSurfs{1} ' ' OutDir '/SearchGrid/Simulation_' sprintf('%05d',i) '/subject_volumes/normE.L.32k_fs_LR.shape.gii -ribbon-constrained ' WhiteSurfs{1} ' ' PialSurfs{1}]); % note: on 1/11/22 CJL removed -interpolate ENCLOSING at the end of this command. 
+    system(['wb_command -volume-to-surface-mapping ' OutDir '/SearchGrid/Simulation_' sprintf('%05d',i) '/subject_volumes/normE.nii.gz  ' MidthickSurfs{2} ' ' OutDir '/SearchGrid/Simulation_' sprintf('%05d',i) '/subject_volumes/normE.R.32k_fs_LR.shape.gii -ribbon-constrained ' WhiteSurfs{2} ' ' PialSurfs{2}]);
     system(['wb_command -metric-mask ' OutDir '/SearchGrid/Simulation_' sprintf('%05d',i) '/subject_volumes/normE.L.32k_fs_LR.shape.gii ' MedialWallMasks{1} ' ' OutDir '/SearchGrid/Simulation_' sprintf('%05d',i) '/subject_volumes/normE.L.32k_fs_LR.shape.gii']); 
     system(['wb_command -metric-mask ' OutDir '/SearchGrid/Simulation_' sprintf('%05d',i) '/subject_volumes/normE.R.32k_fs_LR.shape.gii ' MedialWallMasks{2} ' ' OutDir '/SearchGrid/Simulation_' sprintf('%05d',i) '/subject_volumes/normE.R.32k_fs_LR.shape.gii']);
     system(['wb_command -cifti-create-dense-timeseries ' OutDir '/SearchGrid/Simulation_' sprintf('%05d',i) '/subject_volumes/normE.dtseries.nii -left-metric ' OutDir '/SearchGrid/Simulation_' sprintf('%05d',i) '/subject_volumes/normE.L.32k_fs_LR.shape.gii -roi-left ' MedialWallMasks{1} ' -right-metric ' OutDir '/SearchGrid/Simulation_' sprintf('%05d',i) '/subject_volumes/normE.R.32k_fs_LR.shape.gii -roi-right ' MedialWallMasks{2}]);
