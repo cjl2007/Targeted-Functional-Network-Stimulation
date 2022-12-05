@@ -61,6 +61,7 @@ parfor i = 1:size(SearchGridCoords,1)
     
     % sort coordinates in a radial fashion;
     [yDirs] = SortCircleCoords(yDirs); % 
+    yDirs = yDirs(1:ceil(size(yDirs,1)/2),:); % sample one half of the circle; this reduces the number of simulations you need to run, while still capturing the max on-target value for this coil center. 
 
     % sweep a range of 
     % coil orientations;
@@ -82,7 +83,6 @@ parfor i = 1:size(SearchGridCoords,1)
     run_simnibs(s);
     
     % merge all the volumes into a single 4D file;
-    system(['rm ' OutDir '/SearchGrid/Simulation_' sprintf('%05d',i) '/subject_volumes/normE*']); % can we cut this line?
     system(['fslmerge -t ' OutDir '/SearchGrid/Simulation_' sprintf('%05d',i) '/subject_volumes/normE.nii.gz ' OutDir '/SearchGrid/Simulation_' sprintf('%05d',i) '/subject_volumes/*normE.nii.gz']);
     
     % map concatenated volume to the 32k surface;
