@@ -3,9 +3,9 @@
 % network engagement" - Lynch et al., 2022 (Neuron)
 
 % define some paths 
-Paths{1} = '~/SimNIBS-3.2'; % download from https://simnibs.github.io/simnibs/build/html/index.html
-Paths{2} = '~/Utilities/'; % this folder contains ft_read / gifti functions for reading and writing cifti files (e.g., https://github.com/MidnightScanClub/MSCcodebase). 
-Paths{3} = '~/TANS/'; % 
+Paths{1} = '/home/charleslynch/SimNIBS-3.2'; % download from https://simnibs.github.io/simnibs/build/html/index.html
+Paths{2} = '/home/charleslynch/MultiEchofMRI-Pipeline/res0urces/Utilities/msc'; % this folder contains ft_read / gifti functions for reading and writing cifti files (e.g., https://github.com/MidnightScanClub/MSCcodebase). 
+Paths{3} = '/home/charleslynch/Targeted-Functional-Network-Stimulation-main/TANS'; % 
 
 % add folders 
 % to search path;
@@ -31,9 +31,8 @@ end
 status = exist('ft_read_cifti_mod','file'); 
 status = exist('gifti','file');
 
-% define the path to 
-% directory containing example data;
-DataDir = '/path/to/example_data'; % note: should be obvious, but user needs to manually define this
+% define the path to directory containing example data;
+DataDir = '/home/charleslynch/Targeted-Functional-Network-Stimulation-main/Data'; % note: should be obvious, but user needs to manually define this
 
 %% Create the head model
 %
@@ -262,8 +261,8 @@ tans_optimize(Subject,TargetNetwork,[],PercentileThresholds,SkinVol,SkinSurf,Ski
 
 % generate an inverse transform (if needed); transform target coordinates to native T1w image space (which can be used for neuronav, for example)
 system(['convert_xfm -omat ' DataDir '/' Subject '/anat/T1w/xfms/acpc2orig.mat -inverse ' DataDir '/' Subject '/anat/T1w/xfms/acpc.mat']);
-system(['img2imgcoord -src ' DataDir '/' Subject '/anat/T1w/T1w_acpc.nii.gz -dest ' DataDir '/' Subject '/anat/T1w/T1w.nii.gz -xfm ' DataDir '/' Subject '/anat/T1w/xfms/acpc2orig.mat -mm ' OutDir '/Optimize/CoilCenterCoordinates.txt > ' OutDir '/Optimize/CoilCenterCordinatesNative.txt']);
-system(['img2imgcoord -src ' DataDir '/' Subject '/anat/T1w/T1w_acpc.nii.gz -dest ' DataDir '/' Subject '/anat/T1w/T1w.nii.gz -xfm ' DataDir '/' Subject '/anat/T1w/xfms/acpc2orig.mat -mm ' OutDir '/Optimize/CoilOrientationCoordinates.txt > ' OutDir '/Optimize/CoilOrientationCordinatesNative.txt']);
+system(['img2imgcoord -src ' DataDir '/' Subject '/anat/T1w/T1w_acpc_dc_restore.nii.gz -dest ' DataDir '/' Subject '/anat/T1w/T1w.nii.gz -xfm ' DataDir '/' Subject '/anat/T1w/xfms/acpc2orig.mat -mm ' OutDir '/Optimize/CoilCenterCoordinates.txt > ' OutDir '/Optimize/CoilCenterCordinatesNative.txt']);
+system(['img2imgcoord -src ' DataDir '/' Subject '/anat/T1w/T1w_acpc_dc_restore.nii.gz -dest ' DataDir '/' Subject '/anat/T1w/T1w.nii.gz -xfm ' DataDir '/' Subject '/anat/T1w/xfms/acpc2orig.mat -mm ' OutDir '/Optimize/CoilOrientationCoordinates.txt > ' OutDir '/Optimize/CoilOrientationCordinatesNative.txt']);
 
 %% visualize the extent to which the E-field "hotspot" is on target
 
