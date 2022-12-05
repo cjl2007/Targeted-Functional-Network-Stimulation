@@ -49,6 +49,7 @@ DataDir = '/home/charleslynch/Targeted-Functional-Network-Stimulation-main/Data'
 % T2w: Path to T2w-weighted anatomical image (string). 
 % SmoothingStrength: Amount of spatial smoothing to apply to the skin surface (possible range: 0.0 - 1.0, numeric)
 % SmoothingIterations: The number of iterations when smoothing the skin surface (numeric). 
+% nThreads: The number of parallel pools that will be used in Matlab (numeric).
 % OutDir : Path to the output folder (string).
 % Paths: Paths to folders that must be added to Matlab search path (cell array of strings). 
 
@@ -59,9 +60,10 @@ SmoothingIterations = 500;
 T1w = [DataDir '/' Subject '/anat/T1w/T1w_acpc_dc_restore.nii.gz'];
 T2w = [DataDir '/' Subject '/anat/T1w/T2w_acpc_dc_restore.nii.gz'];
 OutDir = [DataDir '/' Subject '/tans'];
+nThreads = 20;
 
 % run the tans_headmodels function
-tans_headmodels(Subject,T1w,T2w,SmoothingStrength,SmoothingIterations,OutDir,Paths);
+tans_headmodels(Subject,T1w,T2w,SmoothingStrength,SmoothingIterations,nThreads,OutDir,Paths);
 
 %% Identify the target network patch. 
 %
