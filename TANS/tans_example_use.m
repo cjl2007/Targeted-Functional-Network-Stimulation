@@ -4,7 +4,7 @@
 
 % define some paths
 Paths{1} = '/SimNIBS-4.0'; % download from https://simnibs.github.io/simnibs/build/html/index.html
-Paths{2} = '//Utilities/msc'; % this folder contains ft_read / gifti functions for reading and writing cifti files (e.g., https://github.com/MidnightScanClub/MSCcodebase).
+Paths{2} = '/Utilities/msc'; % this folder contains ft_read / gifti functions for reading and writing cifti files (e.g., https://github.com/MidnightScanClub/MSCcodebase).
 Paths{3} = '/Targeted-Functional-Network-Stimulation-main/'; %
 
 % add folders
