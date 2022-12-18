@@ -1,4 +1,4 @@
-function [TargetNetworkPatch] = tans_roi(TargetNetwork,MidthickSurfs,VertexSurfaceArea,Sulc,SearchSpace,OutDir,Paths)
+function tans_roi(TargetNetwork,MidthickSurfs,VertexSurfaceArea,Sulc,SearchSpace,OutDir,Paths)
 % cjl; cjl2007@med.cornell.edu;
 
 % Description of input parameters
@@ -15,8 +15,6 @@ function [TargetNetworkPatch] = tans_roi(TargetNetwork,MidthickSurfs,VertexSurfa
 for i = 1:length(Paths)
 addpath(genpath(Paths{i})); % 
 end
-
-rng(44); % for reproducibility;
 
 % load midthickness surfaces
 LH = gifti(MidthickSurfs{1});
@@ -38,6 +36,13 @@ MedialWallVertices = find(min(D,[],2) < 10); % 10mm seems to work okay; the idea
 
 % make the ROI dir.;
 mkdir([OutDir '/ROI']);
+
+% if no search space provided, 
+% all of cortex is fair game;
+if isempty(SearchSpace)
+    SearchSpace = TargetNetwork; % preallocate
+    SearchSpace.data = zeros(size(SearchSpace.data,1));   
+end
 
 % write out the search space (useful for double 
 % checking that you specified the cortical zones you intended).
