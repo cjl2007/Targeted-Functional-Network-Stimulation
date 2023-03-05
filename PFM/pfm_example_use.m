@@ -38,8 +38,8 @@ end
 C = ft_read_cifti_mod([Subdir '/func/rest/ConcatenatedCiftis/Rest_OCME+MEICA+MGTR_Concatenated+SubcortRegression+SpatialSmoothing2.55.dtseries.nii']);
 C.data(:,FD<0.3)=[]; % remove high motion volumes
 
-% run precision mapping;
-pfm_wrapper(C,[Subdir '/anat/T1w/fsaverage_LR32k/DistanceMatrix.mat'],[Subdir '/pfm/'],flip([0.0001 0.0002 0.0005 0.001 0.002 0.005 0.01 0.02 0.05]),[1 5 10 50 50 50 50 50 50],10,[],{'CORTEX_LEFT','CEREBELLUM_LEFT','ACCUMBENS_LEFT','CAUDATE_LEFT','PALLIDUM_LEFT','PUTAMEN_LEFT','THALAMUS_LEFT','HIPPOCAMPUS_LEFT','AMYGDALA_LEFT','ACCUMBENS_LEFT','CORTEX_RIGHT','CEREBELLUM_RIGHT','ACCUMBENS_RIGHT','CAUDATE_RIGHT','PALLIDUM_RIGHT','PUTAMEN_RIGHT','THALAMUS_RIGHT','HIPPOCAMPUS_RIGHT','AMYGDALA_RIGHT','ACCUMBENS_RIGHT'},5);
+% run precision mapping; (Note: there are hard set paths related to infomap in "pfm.m" user must first set)
+pfm(C,[Subdir '/anat/T1w/fsaverage_LR32k/DistanceMatrix.mat'],[Subdir '/pfm/'],flip([0.0001 0.0002 0.0005 0.001 0.002 0.005 0.01 0.02 0.05]),[1 5 10 50 50 50 50 50 50],10,[],{'CORTEX_LEFT','CEREBELLUM_LEFT','ACCUMBENS_LEFT','CAUDATE_LEFT','PALLIDUM_LEFT','PUTAMEN_LEFT','THALAMUS_LEFT','HIPPOCAMPUS_LEFT','AMYGDALA_LEFT','ACCUMBENS_LEFT','CORTEX_RIGHT','CEREBELLUM_RIGHT','ACCUMBENS_RIGHT','CAUDATE_RIGHT','PALLIDUM_RIGHT','PUTAMEN_RIGHT','THALAMUS_RIGHT','HIPPOCAMPUS_RIGHT','AMYGDALA_RIGHT','ACCUMBENS_RIGHT'},5);
 spatial_filtering([Subdir '/pfm/Bipartite_PhysicalCommunities.dtseries.nii'],[Subdir '/pfm/'],['Bipartite_PhysicalCommunities+SpatialFiltering.dtseries.nii'],MidthickSurfs);
 
 % remove some intermediate files;
