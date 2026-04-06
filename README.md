@@ -1,5 +1,3 @@
-<h1> Targeted Functional Network Stimulation (TANS) </h1>
+This repository is no longer maintained and should not be used for new projects or analyses.
 
-Example data from 6 healthy (non-depressed) individuals is on Box (https://wcm.box.com/v/TANS-ExampleData). <br> 
-
-See tans_example_use.m for step-by-step instructions on how to use TANS. <br> 
+Please use (https://github.com/cjl2007/pfm-mefmri) instead.
